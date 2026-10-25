@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daftar: Legal document translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&family=Noto+Nastaliq+Urdu:wght@400;600&family=Noto+Naskh+Arabic:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --desk:#E9EEEC;
+  --panel:#FFFFFF;
+  --paper:#FFFFFF;
+  --ink:#15201D;
+  --muted:#586661;
+  --rule:#D2DBD7;
+  --rule-soft:#E4EAE7;
+  --baize:#0E5A4B;
+  --baize-deep:#0A4439;
+  --baize-wash:#E2F0EB;
+  --seal:#A12B2B;
+  --seal-wash:#F8E7E5;
+  --amber:#9A5B12;
+  --amber-wash:#FAF0DC;
+  --slate:#3A5F82;
+  --slate-wash:#E6EEF6;
+  --radius:10px;
+  --ui:'Public Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --doc:'Newsreader','Times New Roman',Georgia,serif;
+  --urdu:'Noto Nastaliq Urdu','Noto Naskh Arabic','Jameel Noori Nastaleeq',serif;
+  --naskh:'Noto Naskh Arabic','Noto Nastaliq Urdu',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--desk);color:var(--ink);font:15px/1.5 var(--ui);min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--baize);outline-offset:2px;border-radius:6px}
+[hidden]{display:none!important}
+
+/* header */
+.top{display:flex;align-items:center;gap:16px;padding:14px 28px;background:var(--baize-deep);color:#EAF4F0}
+.brand{display:flex;align-items:baseline;gap:12px;margin-right:auto}
+.brand b{font:italic 500 28px/1 var(--doc);letter-spacing:.2px}
+.brand span{font-size:13px;color:#A9CFC4}
+.brand .ur{font:400 20px/1 var(--naskh);color:#D8EBE4}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;color:#BFDDD3}
+.dot{width:9px;height:9px;border-radius:50%;background:#7E918B}
+.dot.ok{background:#59D1A5}.dot.bad{background:#F08A7E}
+.code{display:flex;align-items:center;gap:8px}
+.code input{width:150px;padding:7px 10px;border-radius:8px;border:1px solid #3F7B6D;background:#0F5143;color:#fff}
+.code input[type=text]{background:#0F5143;color:#fff;border:1px solid #3F7B6D;border-radius:8px;padding:7px 10px}
+.code input::placeholder{color:#8DB8AC}
+
+/* layout */
+.wrap{display:grid;grid-template-columns:minmax(330px,420px) minmax(0,1fr);gap:24px;padding:24px 28px 60px;max-width:1500px;margin:0 auto;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:20px}
+.controls{position:sticky;top:16px;display:flex;flex-direction:column;gap:20px}
+.group h2{margin:0 0 10px;font:600 14px/1.2 var(--ui);color:var(--ink)}
+.group small{color:var(--muted)}
+
+/* segmented */
+.seg{display:inline-flex;background:var(--desk);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;cursor:pointer;color:var(--muted);font-weight:500}
+.seg button[aria-selected=true]{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(20,40,35,.18)}
+
+/* dropzone */
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:26px 16px;border:1.5px dashed #86A99F;border-radius:12px;background:#F6FAF8;cursor:pointer;transition:background .15s,border-color .15s}
+.drop:hover,.drop.over{background:var(--baize-wash);border-color:var(--baize)}
+.drop strong{font-weight:600}
+.drop span{color:var(--muted);font-size:13px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin-top:12px}
+.thumb{position:relative;border:1px solid var(--rule);border-radius:10px;background:#fff;overflow:hidden}
+.thumb .img{height:112px;display:flex;align-items:center;justify-content:center;background:#F1F4F3;overflow:hidden}
+.thumb img{max-width:100%;max-height:100%;transition:transform .2s}
+.thumb .pdf{font:600 13px var(--ui);color:var(--seal)}
+.thumb .meta{padding:6px 8px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb .acts{display:flex;border-top:1px solid var(--rule-soft)}
+.thumb .acts button{flex:1;border:0;background:#fff;padding:6px 0;cursor:pointer;color:var(--muted);font-size:13px}
+.thumb .acts button:hover{background:var(--baize-wash);color:var(--baize-deep)}
+.thumb .acts button+button{border-left:1px solid var(--rule-soft)}
+.thumb .n{position:absolute;top:6px;left:6px;background:var(--baize-deep);color:#fff;border-radius:6px;font-size:12px;padding:1px 7px}
+textarea.src{width:100%;min-height:170px;resize:vertical;padding:12px;border:1px solid var(--rule);border-radius:10px;background:#fff}
+
+/* languages */
+.langs{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--muted)}
+select,input.t,textarea.t{width:100%;padding:9px 10px;border:1px solid var(--rule);border-radius:9px;background:#fff;color:var(--ink)}
+select{appearance:auto}
+.swap{border:1px solid var(--rule);background:#fff;border-radius:9px;width:40px;height:40px;cursor:pointer;font-size:17px;color:var(--baize-deep)}
+.swap:hover{background:var(--baize-wash)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{border:1px solid var(--rule);background:#fff;border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;color:var(--ink)}
+.chip:hover{border-color:var(--baize);color:var(--baize-deep)}
+.chip[aria-pressed=true]{background:var(--baize-wash);border-color:var(--baize);color:var(--baize-deep);font-weight:600}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stack{display:flex;flex-direction:column;gap:12px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:11px 18px;border:1px solid var(--rule);background:#fff;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--baize);color:var(--baize-deep)}
+.btn.primary{background:var(--baize);border-color:var(--baize);color:#fff}
+.btn.primary:hover{background:var(--baize-deep);color:#fff}
+.btn.sm{padding:7px 12px;font-weight:500;font-size:13.5px;border-radius:8px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+
+/* output */
+.out{min-width:0}
+.out-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.tabs{display:inline-flex;gap:4px;background:#DCE5E1;border-radius:11px;padding:4px}
+.tabs button{border:0;background:transparent;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:500;color:var(--muted);display:flex;gap:8px;align-items:center}
+.tabs button[aria-selected=true]{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(20,40,35,.2)}
+.badge{min-width:20px;height:20px;border-radius:10px;padding:0 6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;background:var(--amber-wash);color:var(--amber)}
+.badge.crit{background:var(--seal);color:#fff}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.info{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px;color:var(--muted);font-size:13.5px}
+.tag{background:#fff;border:1px solid var(--rule);border-radius:999px;padding:3px 11px}
+.tag.hi{border-color:#9CCBBB;background:var(--baize-wash);color:var(--baize-deep)}
+.tag.mid{border-color:#E5CB98;background:var(--amber-wash);color:var(--amber)}
+.tag.lo{border-color:#E1AEA9;background:var(--seal-wash);color:var(--seal)}
+
+.progress{height:4px;background:#D3DFDA;border-radius:2px;overflow:hidden;margin:0 0 14px}
+.progress i{display:block;height:100%;width:35%;background:var(--baize);border-radius:2px;animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{margin-left:-35%}100%{margin-left:100%}}
+.statusline{display:flex;align-items:center;gap:12px;margin-bottom:8px;color:var(--ink);font-weight:500}
+.alert{background:var(--seal-wash);border:1px solid #E1AEA9;color:#6D1D1D;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+
+/* the sheet */
+.sheet-wrap{background:#CBD6D1;border-radius:14px;padding:26px;display:flex;justify-content:center}
+.sheet{width:100%;max-width:860px;min-height:480px;background:var(--paper);box-shadow:0 1px 0 #fff inset,0 10px 30px rgba(20,40,35,.16);padding:56px 64px;font:400 17.5px/1.72 var(--doc);color:#111A17;overflow-wrap:break-word}
+.sheet.rtl{direction:rtl;text-align:right;font:400 19px/2.35 var(--urdu)}
+.sheet.rtl h1,.sheet.rtl h2,.sheet.rtl h3,.sheet.rtl h4{font-family:var(--urdu);line-height:2}
+.sheet h1{font:600 26px/1.25 var(--doc);margin:0 0 .6em;text-align:center}
+.sheet h2{font:600 20px/1.3 var(--doc);margin:1.5em 0 .5em;padding-bottom:.25em;border-bottom:1px solid var(--rule)}
+.sheet h3{font:600 18px/1.3 var(--doc);margin:1.3em 0 .4em}
+.sheet h4{font:600 17px/1.3 var(--doc);margin:1.2em 0 .3em}
+.sheet p{margin:0 0 .9em;text-align:justify;hyphens:auto}
+.sheet.rtl p{text-align:justify}
+.sheet ul,.sheet ol{margin:0 0 1em;padding-inline-start:1.5em}
+.sheet blockquote{margin:0 0 1em;padding:.2em 1em;border-inline-start:3px solid var(--baize);color:#34423D}
+.sheet hr{border:0;border-top:1px solid var(--rule);margin:1.4em 0}
+.sheet code{font:14px ui-monospace,Menlo,Consolas,monospace;background:#EEF2F0;padding:1px 5px;border-radius:4px}
+.tablewrap{overflow-x:auto;margin:0 0 1.1em}
+.sheet table{border-collapse:collapse;width:100%;font-size:16px;line-height:1.55}
+.sheet.rtl table{font-size:17px;line-height:2.1}
+.sheet th,.sheet td{border:1px solid #9AA8A3;padding:7px 10px;vertical-align:top;text-align:start}
+.sheet th{background:#EDF3F0;font-weight:600}
+.note{font:italic 400 .88em var(--doc);color:#51605A;background:#F1F4F2;border-radius:4px;padding:0 4px}
+.sheet.rtl .note{font-family:var(--urdu);font-style:normal}
+.sheet mark{background:none;border-bottom:2.5px solid var(--amber);color:inherit;cursor:pointer;border-radius:2px;padding:0}
+.sheet mark.sev-critical{border-color:var(--seal);background:rgba(161,43,43,.08)}
+.sheet mark.sev-info{border-color:var(--slate)}
+.sheet mark.flash{animation:flash 1.4s}
+@keyframes flash{0%,60%{background:#FFE9A8}100%{background:transparent}}
+.caret::after{content:'';display:inline-block;width:8px;height:1em;background:var(--baize);margin-inline-start:3px;vertical-align:-.15em;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.empty{color:var(--muted);text-align:center;margin:90px auto 0;max-width:380px;font:400 17px/1.6 var(--ui);direction:ltr}
+.empty b{display:block;font:italic 500 26px var(--doc);color:var(--ink);margin-bottom:8px}
+textarea.editor{width:100%;max-width:860px;min-height:560px;padding:22px 26px;border:1px solid var(--rule);border-radius:12px;background:#fff;font:16px/1.7 var(--doc)}
+
+/* review */
+.issues{display:flex;flex-direction:column;gap:12px}
+.issue{background:#fff;border:1px solid var(--rule);border-inline-start:5px solid var(--amber);border-radius:12px;padding:16px 18px}
+.issue.critical{border-inline-start-color:var(--seal)}
+.issue.info{border-inline-start-color:var(--slate)}
+.issue.is-approved{background:#F3FAF7;border-color:#9CCBBB;border-inline-start-color:var(--baize)}
+.issue.is-skipped{opacity:.6}
+.issue.is-applied{background:#F3FAF7}
+.i-top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:13px;color:var(--muted)}
+.sev{font-weight:600;padding:2px 9px;border-radius:999px;background:var(--amber-wash);color:var(--amber)}
+.sev.critical{background:var(--seal-wash);color:var(--seal)}
+.sev.info{background:var(--slate-wash);color:var(--slate)}
+.issue p{margin:0 0 8px}
+.issue .lbl{display:block;font-size:12.5px;color:var(--muted);margin-bottom:2px}
+.issue .src{font:400 17px/2.1 var(--naskh);background:#F6F8F7;border-radius:8px;padding:6px 10px;margin-bottom:8px}
+.diff{display:grid;gap:8px;margin:8px 0 12px}
+.diff .old{background:var(--seal-wash);border-radius:8px;padding:8px 10px;text-decoration:line-through;text-decoration-color:#C98A86}
+.diff textarea{width:100%;min-height:54px;resize:vertical;border:1px solid #9CCBBB;background:#fff;border-radius:8px;padding:8px 10px;font:16px/1.6 var(--doc)}
+.i-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.state{font-size:13px;color:var(--baize-deep);font-weight:600}
+.apply-bar{position:sticky;bottom:12px;margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--baize-deep);color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 8px 24px rgba(10,50,40,.3)}
+.apply-bar span{margin-right:auto}
+.apply-bar .btn{border-color:#fff}
+.noissues{background:var(--baize-wash);border:1px solid #9CCBBB;border-radius:12px;padding:18px;color:var(--baize-deep)}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#15201D;color:#fff;padding:10px 16px;border-radius:10px;z-index:30;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+
+@media (max-width:980px){
+  .wrap{grid-template-columns:1fr;padding:16px}
+  .controls{position:static}
+  .top{padding:12px 16px;flex-wrap:wrap}
+  .sheet{padding:32px 22px;font-size:16.5px}
+  .sheet-wrap{padding:12px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+@media print{
+  body{background:#fff}
+  .top,.controls,.out-head,.info,.progress,.statusline,.alert,.apply-bar,.toast,#review,#editorBox{display:none!important}
+  .wrap{display:block;padding:0;max-width:none}
+  .sheet-wrap{background:none;padding:0;display:block}
+  .sheet{box-shadow:none;padding:0;max-width:none;font-size:12pt;font-family:'Times New Roman',serif}
+  .sheet.rtl{font-size:13pt}
+  .sheet mark{border:0;background:none}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><b>Daftar</b><span class="ur" lang="ur" dir="rtl">دفتر</span><span>Legal document translator</span></div>
+  <div class="code" id="keyBox" hidden>
+    <label for="key" style="font-size:13px;color:#BFDDD3">API key</label>
+    <input id="key" type="password" autocomplete="off" placeholder="sk-ant-...">
+    <input id="model" type="text" aria-label="Model" title="Model name" style="width:150px" placeholder="claude-sonnet-5-5">
+  </div>
+  <div class="code" id="codeBox" hidden>
+    <label for="code" style="font-size:13px;color:#BFDDD3">Access code</label>
+    <input id="code" type="password" autocomplete="current-password" placeholder="Enter code">
+  </div>
+  <div class="status"><i class="dot" id="dot"></i><span id="statusText">Checking server</span></div>
+</header>
+
+<main class="wrap">
+  <!-- controls -->
+  <section class="panel controls" aria-label="Translation settings">
+    <div class="group">
+      <h2>Document</h2>
+      <div class="seg" role="tablist" aria-label="Input type">
+        <button role="tab" id="tabFile" aria-selected="true">Photo or PDF</button>
+        <button role="tab" id="tabText" aria-selected="false">Paste text</button>
+      </div>
+      <div id="fileBox" style="margin-top:12px">
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos or PDF">
+          <strong>Drop the form here, or tap to choose</strong>
+          <span>Photos and PDFs. You can also paste a screenshot (Ctrl+V). Add all pages in order.</span>
+        </div>
+        <input type="file" id="picker" accept="image/*,application/pdf" multiple hidden>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+      <div id="textBox" hidden style="margin-top:12px">
+        <textarea class="src" id="srcText" dir="auto" placeholder="Paste the document text here"></textarea>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Languages</h2>
+      <div class="langs">
+        <label class="f">From<select id="from"></select></label>
+        <button class="swap" id="swap" title="Swap languages" aria-label="Swap languages">⇄</button>
+        <label class="f">To<select id="to"></select></label>
+      </div>
+      <div class="chips" id="chips">
+        <button class="chip" data-from="Urdu" data-to="English" aria-pressed="false">Urdu to English</button>
+        <button class="chip" data-from="English" data-to="Urdu" aria-pressed="false">English to Urdu</button>
+      </div>
+    </div>
+
+    <div class="group stack">
+      <div class="row2">
+        <label class="f">Writing style
+          <select id="style">
+            <option value="judicial">Judicial / legal</option>
+            <option value="formal">Formal</option>
+            <option value="plain">Plain language</option>
+          </select>
+        </label>
+        <label class="f">Review notes in
+          <select id="notes">
+            <option value="Urdu (اردو)">Urdu (اردو)</option>
+            <option value="English">English</option>
+            <option value="Roman Urdu">Roman Urdu</option>
+          </select>
+        </label>
+      </div>
+      <label class="f">Extra instructions (optional)
+        <textarea class="t" id="extra" rows="2" dir="auto" placeholder="For example: keep names in capital letters"></textarea>
+      </label>
+    </div>
+
+    <div>
+      <button class="btn primary block" id="go">Translate</button>
+      <button class="btn block" id="stop" hidden style="margin-top:8px">Stop</button>
+      <p class="hint">Nothing in the translation is changed without your approval. Problems found are listed in Review.</p>
+    </div>
+  </section>
+
+  <!-- output -->
+  <section class="out" aria-live="polite">
+    <div class="out-head">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tabTr" aria-selected="true">Translation</button>
+        <button role="tab" id="tabRv" aria-selected="false">Review <span class="badge" id="badge" hidden>0</span></button>
+      </div>
+      <div class="tools" id="tools" hidden>
+        <button class="btn sm" id="copy">Copy</button>
+        <button class="btn sm" id="edit">Edit text</button>
+        <button class="btn sm" id="undo" hidden>Undo corrections</button>
+        <button class="btn sm" id="word">Download Word</button>
+        <button class="btn sm" id="print">Print / PDF</button>
+      </div>
+    </div>
+
+    <div class="alert" id="error" role="alert" hidden></div>
+    <div id="busy" hidden>
+      <div class="statusline"><span id="busyText">Working</span></div>
+      <div class="progress"><i></i></div>
+    </div>
+
+    <div id="trPane">
+      <div class="info" id="info" hidden></div>
+      <div class="sheet-wrap" id="sheetWrap">
+        <article class="sheet" id="sheet">
+          <div class="empty"><b>Ready when you are</b>Add a photo or PDF of the form, choose the languages and press Translate. The translation appears here page by page.</div>
+        </article>
+      </div>
+      <div id="editorBox" hidden>
+        <textarea class="editor" id="editor" dir="auto" spellcheck="false"></textarea>
+        <div style="margin-top:10px;display:flex;gap:8px"><button class="btn primary sm" id="editDone">Save changes</button><button class="btn sm" id="editCancel">Cancel</button></div>
+      </div>
+    </div>
+
+    <div id="review" hidden>
+      <div class="issues" id="issues"></div>
+      <div class="apply-bar" id="applyBar" hidden>
+        <span id="applyText"></span>
+        <button class="btn sm" id="approveAll">Approve all suggestions</button>
+        <button class="btn sm primary" id="apply" style="background:#fff;color:var(--baize-deep)">Apply approved corrections</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+let toastTimer;
+function toast(msg) {
+  const old = $('.toast'); if (old) old.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; t.setAttribute('role', 'status');
+  document.body.appendChild(t); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 2800);
+}
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+const LANGS = ['Urdu','English','Punjabi (Shahmukhi)','Punjabi (Gurmukhi)','Hindi','Arabic','Persian (Farsi)','Pashto','Sindhi','German','French','Spanish','Italian','Portuguese','Turkish','Russian','Chinese (Simplified)','Japanese','Korean'];
+const RTL = new Set(['Urdu','Arabic','Persian (Farsi)','Pashto','Sindhi','Punjabi (Shahmukhi)']);
+
+const state = { mode: 'file', files: [], busy: false, abort: null, md: '', info: null, issues: [], istate: {}, iedit: {}, history: [], code: '', server: null, direct: false, apiKey: '', model: '' };
+
+/* ---------- server status + access code ---------- */
+async function ping() {
+  const dot = $('#dot');
+  try {
+    const r = await fetch('/api/ping', { cache: 'no-store' });
+    if (!r.ok || !(r.headers.get('content-type') || '').includes('json')) throw new Error('no server');
+    const j = await r.json(); if (!j || j.ok !== true) throw new Error('no server');
+    state.server = j; state.direct = !j.configured;
+    $('#codeBox').hidden = !j.needsCode || state.direct;
+  } catch { state.server = null; state.direct = true; }
+  $('#keyBox').hidden = !state.direct;
+  if (state.direct) { dot.className = 'dot ' + (state.apiKey ? 'ok' : 'bad'); $('#statusText').textContent = state.apiKey ? 'Direct mode' : 'Enter API key'; }
+  else { dot.className = 'dot ok'; $('#statusText').textContent = 'Ready'; }
+}
+state.code = store.get('daftar.code') || '';
+$('#code').value = state.code;
+state.apiKey = store.get('daftar.key') || '';
+state.model = store.get('daftar.model') || 'claude-sonnet-5-5';
+$('#key').value = state.apiKey; $('#model').value = state.model;
+$('#key').addEventListener('input', e => { state.apiKey = e.target.value; store.set('daftar.key', state.apiKey); if (state.direct) { $('#dot').className = 'dot ' + (state.apiKey.trim() ? 'ok' : 'bad'); $('#statusText').textContent = state.apiKey.trim() ? 'Direct mode' : 'Enter API key'; } });
+$('#model').addEventListener('input', e => { state.model = e.target.value; store.set('daftar.model', state.model); });
+$('#code').addEventListener('input', e => { state.code = e.target.value; store.set('daftar.code', state.code); });
+
+/* ---------- language controls ---------- */
+const fromSel = $('#from'), toSel = $('#to');
+fromSel.innerHTML = '<option value="auto">Auto-detect</option>' + LANGS.map(l => `<option>${esc(l)}</option>`).join('');
+toSel.innerHTML = LANGS.map(l => `<option>${esc(l)}</option>`).join('');
+fromSel.value = store.get('daftar.from') || 'Urdu';
+toSel.value = store.get('daftar.to') || 'English';
+['style', 'notes'].forEach(id => { const v = store.get('daftar.' + id); if (v) $('#' + id).value = v; });
+
+function syncLang() {
+  store.set('daftar.from', fromSel.value); store.set('daftar.to', toSel.value);
+  $('#go').textContent = 'Translate to ' + toSel.value;
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.from === fromSel.value && c.dataset.to === toSel.value)));
+}
+fromSel.addEventListener('change', syncLang); toSel.addEventListener('change', syncLang);
+$('#style').addEventListener('change', e => store.set('daftar.style', e.target.value));
+$('#notes').addEventListener('change', e => store.set('daftar.notes', e.target.value));
+$('#swap').addEventListener('click', () => {
+  if (fromSel.value === 'auto') { fromSel.value = toSel.value; toSel.value = toSel.value === 'English' ? 'Urdu' : 'English'; }
+  else { const a = fromSel.value; fromSel.value = toSel.value; toSel.value = a; }
+  syncLang();
+});
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { fromSel.value = c.dataset.from; toSel.value = c.dataset.to; syncLang(); }));
+syncLang();
+
+/* ---------- input mode ---------- */
+function setMode(m) {
+  state.mode = m;
+  $('#tabFile').setAttribute('aria-selected', String(m === 'file'));
+  $('#tabText').setAttribute('aria-selected', String(m === 'text'));
+  $('#fileBox').hidden = m !== 'file'; $('#textBox').hidden = m !== 'text';
+}
+$('#tabFile').addEventListener('click', () => setMode('file'));
+$('#tabText').addEventListener('click', () => setMode('text'));
+
+/* ---------- files ---------- */
+const drop = $('#drop'), picker = $('#picker');
+drop.addEventListener('click', () => picker.click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); picker.click(); } });
+picker.addEventListener('change', () => { addFiles([...picker.files]); picker.value = ''; });
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
+document.addEventListener('paste', e => {
+  const items = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (items.length) { setMode('file'); addFiles(items); }
+});
+
+function addFiles(list) {
+  for (const f of list) {
+    if (f.type === 'application/pdf') {
+      if (f.size > 20 * 1024 * 1024) { toast('That PDF is larger than 20 MB.'); continue; }
+      state.files.push({ id: uid(), kind: 'pdf', name: f.name, file: f });
+    } else if (f.type.startsWith('image/')) {
+      state.files.push({ id: uid(), kind: 'image', name: f.name || 'pasted-image.png', file: f, url: URL.createObjectURL(f), rot: 0 });
+    } else toast('Only photos and PDF files are supported.');
+  }
+  renderFiles();
+}
+function renderFiles() {
+  const box = $('#thumbs');
+  box.innerHTML = state.files.map((f, i) => `
+    <div class="thumb" data-id="${f.id}">
+      <span class="n">${i + 1}</span>
+      <div class="img">${f.kind === 'pdf' ? '<span class="pdf">PDF</span>' : `<img alt="" src="${f.url}" style="transform:rotate(${f.rot}deg)">`}</div>
+      <div class="meta" title="${esc(f.name)}">${esc(f.name)}</div>
+      <div class="acts">
+        <button data-a="left" aria-label="Move earlier" title="Move earlier">‹</button>
+        ${f.kind === 'image' ? '<button data-a="rot" aria-label="Rotate" title="Rotate">↻</button>' : ''}
+        <button data-a="right" aria-label="Move later" title="Move later">›</button>
+        <button data-a="del" aria-label="Remove" title="Remove">✕</button>
+      </div>
+    </div>`).join('');
+}
+$('#thumbs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.closest('.thumb').dataset.id; const i = state.files.findIndex(f => f.id === id); if (i < 0) return;
+  const a = b.dataset.a;
+  if (a === 'del') { const [f] = state.files.splice(i, 1); if (f.url) URL.revokeObjectURL(f.url); }
+  if (a === 'rot') state.files[i].rot = (state.files[i].rot + 90) % 360;
+  if (a === 'left' && i > 0) [state.files[i - 1], state.files[i]] = [state.files[i], state.files[i - 1]];
+  if (a === 'right' && i < state.files.length - 1) [state.files[i + 1], state.files[i]] = [state.files[i], state.files[i + 1]];
+  renderFiles();
+});
+
+const blobToB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('Could not read a file.')); r.readAsDataURL(blob); });
+async function imageToB64(item) {
+  let bmp;
+  try { bmp = await createImageBitmap(item.file); }
+  catch { throw new Error('This browser could not open "' + item.name + '". Try a JPG or PNG.'); }
+  const max = 2000, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * s), h = Math.round(bmp.height * s);
+  const swap = item.rot === 90 || item.rot === 270;
+  const c = document.createElement('canvas'); c.width = swap ? h : w; c.height = swap ? w : h;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  x.translate(c.width / 2, c.height / 2); x.rotate(item.rot * Math.PI / 180); x.drawImage(bmp, -w / 2, -h / 2, w, h);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+  return blobToB64(blob);
+}
+
+/* ---------- markdown rendering ---------- */
+function inline(s) {
+  s = esc(s).replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  s = s.replace(/\[((?:Stamp|Seal|Handwritten|Illegible|illegible|Partly legible|partly legible|Struck through|struck through|Signature|Initials|Marginal note|Printed|Typed)[^\]]*)\]/g, '<span class="note">[$1]</span>');
+  return s;
+}
+function cells(r) { r = r.trim(); if (r.startsWith('|')) r = r.slice(1); if (r.endsWith('|')) r = r.slice(0, -1); return r.split('|').map(c => c.trim()); }
+function tableHtml(rows) {
+  const p = rows.map(cells); let head = null, body = p;
+  if (p.length > 1 && p[1].every(c => /^:?-{2,}:?$/.test(c))) { head = p[0]; body = p.slice(2); }
+  return '<div class="tablewrap"><table>' +
+    (head ? '<thead><tr>' + head.map(c => `<th>${inline(c)}</th>`).join('') + '</tr></thead>' : '') +
+    '<tbody>' + body.map(r => '<tr>' + r.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>';
+}
+function mdToHtml(md) {
+  const L = String(md || '').replace(/\r\n/g, '\n').split('\n'); const out = []; let i = 0;
+  const isBlock = l => /^(#{1,4}\s|\s*\||\s*[-*]\s+|\s*\d+[.)]\s+|>|\s*(-{3,}|\*{3,})\s*$)/.test(l);
+  while (i < L.length) {
+    const l = L[i]; if (!l.trim()) { i++; continue; }
+    let m;
+    if ((m = l.match(/^(#{1,4})\s+(.*)$/))) { out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); i++; continue; }
+    if (/^\s*(-{3,}|\*{3,})\s*$/.test(l)) { out.push('<hr>'); i++; continue; }
+    if (/^\s*\|/.test(l)) { const rows = []; while (i < L.length && /^\s*\|/.test(L[i])) rows.push(L[i++]); out.push(tableHtml(rows)); continue; }
+    if (/^\s*[-*]\s+/.test(l)) { const it = []; while (i < L.length && /^\s*[-*]\s+/.test(L[i])) it.push(L[i++].replace(/^\s*[-*]\s+/, '')); out.push('<ul>' + it.map(x => `<li>${inline(x)}</li>`).join('') + '</ul>'); continue; }
+    if (/^\s*\d+[.)]\s+/.test(l)) { const it = []; while (i < L.length && /^\s*\d+[.)]\s+/.test(L[i])) it.push(L[i++].replace(/^\s*\d+[.)]\s+/, '')); out.push('<ol>' + it.map(x => `<li>${inline(x)}</li>`).join('') + '</ol>'); continue; }
+    if (/^>\s?/.test(l)) { const it = []; while (i < L.length && /^>\s?/.test(L[i])) it.push(L[i++].replace(/^>\s?/, '')); out.push('<blockquote>' + it.map(inline).join('<br>') + '</blockquote>'); continue; }
+    const buf = [l]; i++;
+    while (i < L.length && L[i].trim() && !isBlock(L[i])) buf.push(L[i++]);
+    out.push('<p>' + buf.map(inline).join('<br>') + '</p>');
+  }
+  return out.join('\n');
+}
+
+/* ---------- sheet rendering ---------- */
+const sheet = $('#sheet');
+function targetIsRtl() { return RTL.has(state.resultTarget || toSel.value); }
+function renderSheet(md, streaming) {
+  sheet.classList.toggle('rtl', targetIsRtl());
+  sheet.dir = targetIsRtl() ? 'rtl' : 'ltr';
+  sheet.innerHTML = md.trim() ? mdToHtml(md) : '';
+  sheet.classList.toggle('caret', !!streaming);
+  if (!streaming) highlight();
+}
+function highlight() {
+  state.issues.forEach(is => {
+    const ex = is.translation_excerpt; const st = state.istate[is.id];
+    if (!ex || st === 'applied' || st === 'skipped') return;
+    const w = document.createTreeWalker(sheet, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) {
+      const i = n.nodeValue.indexOf(ex);
+      if (i >= 0) {
+        const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + ex.length);
+        const m = document.createElement('mark'); m.dataset.issue = is.id; m.className = 'sev-' + is.severity; m.title = 'Open review note';
+        try { r.surroundContents(m); } catch {}
+        break;
+      }
+    }
+  });
+}
+sheet.addEventListener('click', e => {
+  const m = e.target.closest('mark'); if (!m) return;
+  showTab('rv'); const card = document.getElementById('issue-' + m.dataset.issue);
+  if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.style.outline = '3px solid var(--amber)'; setTimeout(() => card.style.outline = '', 1400); }
+});
+
+/* ---------- tabs ---------- */
+function showTab(t) {
+  const tr = t === 'tr';
+  $('#tabTr').setAttribute('aria-selected', String(tr)); $('#tabRv').setAttribute('aria-selected', String(!tr));
+  $('#trPane').hidden = !tr; $('#review').hidden = tr;
+}
+$('#tabTr').addEventListener('click', () => showTab('tr'));
+$('#tabRv').addEventListener('click', () => showTab('rv'));
+
+/* ---------- streaming ---------- */
+function partialMd(acc) {
+  const k = '"translation_markdown"'; let i = acc.indexOf(k); if (i < 0) return null;
+  i = acc.indexOf(':', i + k.length); if (i < 0) return null; i = acc.indexOf('"', i); if (i < 0) return null; i++;
+  let s = '', j = i;
+  while (j < acc.length) {
+    const c = acc[j];
+    if (c === '\\') { if (j + 1 >= acc.length) break; s += c + acc[j + 1]; j += 2; continue; }
+    if (c === '"') break; s += c; j++;
+  }
+  for (const t of [s, s.replace(/\\u[0-9a-fA-F]{0,3}$/, '')]) { try { return JSON.parse('"' + t + '"'); } catch {} }
+  return null;
+}
+function setBusy(b, text) {
+  state.busy = b; $('#busy').hidden = !b; $('#go').hidden = b; $('#stop').hidden = !b;
+  if (text) $('#busyText').textContent = text;
+}
+function showError(msg) { const e = $('#error'); e.textContent = msg; e.hidden = !msg; }
+
+const TOOL = {
+  name: 'submit_translation',
+  description:
+    'Submit the complete translation of the document and a separate list of review issues. Do not apply any fixes inside the translation: the user approves fixes later.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      translation_markdown: {
+        type: 'string',
+        description:
+          'The complete, faithful translation in Markdown. Use # / ## / ### headings, pipe tables for forms and tables, and plain paragraphs. Nothing may be skipped.',
+      },
+      document_info: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Short title of the document in the target language.' },
+          document_type: { type: 'string', description: 'For example: FIR, Cancellation report, Court order, Application.' },
+          detected_source_language: { type: 'string' },
+          confidence: { type: 'string', enum: ['high', 'medium', 'low'], description: 'Overall confidence in the reading of the source.' },
+          pages_read: { type: 'integer' },
+        },
+        required: ['title', 'document_type', 'detected_source_language', 'confidence'],
+      },
+      issues: {
+        type: 'array',
+        description: 'Real problems only. Empty array if there are none.',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'i1, i2, i3 ...' },
+            severity: { type: 'string', enum: ['critical', 'warning', 'info'] },
+            category: {
+              type: 'string',
+              enum: ['illegible', 'ambiguous', 'inconsistency', 'source_error', 'legal_check', 'terminology', 'other'],
+            },
+            location: { type: 'string', description: 'Where in the document (page, row, paragraph).' },
+            source_text: { type: 'string', description: 'The relevant words exactly as written in the source.' },
+            problem: { type: 'string', description: 'What is wrong or uncertain, in the review-notes language.' },
+            suggestion: { type: 'string', description: 'What you recommend, in the review-notes language.' },
+            translation_excerpt: {
+              type: 'string',
+              description:
+                'Only if you propose a wording change: a short exact verbatim snippet of translation_markdown (plain words, no Markdown symbols) that appears exactly once.',
+            },
+            replacement: { type: 'string', description: 'Only with translation_excerpt: the text that would replace it.' },
+          },
+          required: ['id', 'severity', 'category', 'problem'],
+        },
+      },
+    },
+    required: ['translation_markdown', 'document_info', 'issues'],
+  },
+};
+const STYLES = {
+  judicial:
+    'Formal judicial register, as used in pleadings, FIRs, police reports and court orders. Use established legal phrasing (for example "vide", "the aforementioned", "in the meantime", "whereas", "it is therefore requested") and third-person, objective wording. Never casual.',
+  formal: 'Formal, professional register suitable for official correspondence. Precise and neutral.',
+  plain: 'Clear, plain language that an ordinary reader understands, but still accurate and complete.',
+};
+function systemPrompt(o) {
+  return `You are a senior legal translator and document analyst serving lawyers, court staff, police clerks and typists in Pakistan. You translate scanned or photographed forms, FIRs, court orders, applications, reports and similar documents with complete fidelity.
+
+TASK
+Translate the supplied document from ${o.source} into ${o.target}. Then review it and list any problems you found. Answer only by calling the tool submit_translation.
+
+TRANSLATION RULES
+1. Complete. Translate every word on every page: headings, form labels, column titles, row numbers, names, addresses, dates, numbers, section numbers, stamps, seals, signatures, marginal and handwritten notes, enclosure lists, footers. Skip nothing. Never summarise, shorten or merge.
+2. Faithful. Do not correct, improve, complete or reinterpret the source. If the source contains a mistake, translate it as written and report it in "issues". Do not apply any fix in the translation.
+3. Layout. Follow the original reading order and structure. Reproduce forms and tables as Markdown pipe tables (keep the numbering of rows). Keep paragraph breaks. Keep a continuation sentence that starts or ends mid-sentence as it is.
+4. Register: ${STYLES[o.style] || STYLES.judicial}
+5. Terminology. Use the standard legal vocabulary of the target language and keep it consistent through the whole document. Urdu to English examples: complainant (mustaghis), accused (mulzim), Investigating Officer, Station House Officer (SHO), supplementary statement (zimni), pre-arrest bail, cancellation report, Pakistan Penal Code (PPC). English to Urdu: use the formal Urdu legal vocabulary used in Pakistani police and court documents.
+6. Names, numbers, dates. Transliterate personal and place names consistently. Copy case numbers, section numbers, letter numbers and dates exactly as written; do not reformat dates or convert calendars. If a date can be read in more than one way, keep it as written and report it.
+7. Non-text elements. Put them in square brackets at the place where they appear: [Stamp: ...], [Seal: ...], [Handwritten: ...], [Signature], [Struck through: ...], [Marginal note: ...]. For unreadable text write [illegible]. For doubtful readings write [partly legible: best reading]. Never guess silently.
+8. Do not add commentary, translator notes or explanations inside translation_markdown. Everything you want to say goes into "issues".
+
+REVIEW RULES (the "issues" list)
+- Report only real, useful findings. Quality over quantity. An empty list is fine.
+- Look for: illegible or doubtful readings; ambiguous wording; inconsistencies (names, spellings, dates, numbers, relationships, sequence of events, one person described but several named, section numbers that do not match); apparent errors in the source; legal points worth checking (for example offence sections that do not match the described facts); terminology choices where more than one rendering is reasonable.
+- severity: "critical" = may change the legal meaning or facts; "warning" = should be checked; "info" = small note.
+- Write location, problem and suggestion in ${o.notes}. Keep source_text in the source language exactly as written.
+- Only when you propose a concrete wording change in the translation, add translation_excerpt (a short exact verbatim snippet of translation_markdown, plain words only, appearing exactly once) and replacement. Otherwise leave both out. Fixes are never applied by you; the user approves them one by one.
+${o.extra ? `\nEXTRA INSTRUCTIONS FROM THE USER\n${o.extra}\n` : ''}`;
+}
+function buildContent(body, source, target) {
+  const content = [];
+  const files = body.files;
+  files.forEach((f, i) => {
+    if (files.length > 1) content.push({ type: 'text', text: `Page ${i + 1} of ${files.length}:` });
+    if (f.type === 'pdf') {
+      content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.data } });
+    } else {
+      content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: f.data } });
+    }
+  });
+  const text = (body.text || '').toString();
+  if (text.trim()) content.push({ type: 'text', text: `Source text:\n\n${text}` });
+  content.push({
+    type: 'text',
+    text: `Translate the complete document above from ${source} to ${target}. If there are several pages, treat them as one continuous document in the order given. Call submit_translation.`,
+  });
+  return content;
+}
+
+function buildDirectRequest(body) {
+  const clean = (v, d) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 80) : d);
+  const source = clean(body.source, 'auto') === 'auto' ? 'the language of the document (detect it)' : clean(body.source, 'auto');
+  const target = clean(body.target, 'English');
+  const opts = { source, target, style: ['judicial', 'formal', 'plain'].includes(body.style) ? body.style : 'judicial', notes: clean(body.notes, 'English'), extra: (body.extra || '').toString().slice(0, 2000).trim() };
+  return {
+    model: (state.model || 'claude-sonnet-5-5').trim(), max_tokens: 16000, stream: true,
+    system: systemPrompt(opts), tools: [TOOL], tool_choice: { type: 'tool', name: TOOL.name },
+    messages: [{ role: 'user', content: buildContent(body, source, target) }],
+  };
+}
+async function sendRequest(payload, signal) {
+  if (state.direct) {
+    if (!state.apiKey.trim()) throw new Error('Enter your Anthropic API key in the top bar first.');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal,
+      headers: { 'content-type': 'application/json', 'x-api-key': state.apiKey.trim(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify(buildDirectRequest(payload)),
+    });
+    if (!res.ok) {
+      let m = 'The AI service returned an error (' + res.status + ').'; try { const j = await res.json(); m += ' ' + ((j.error && j.error.message) || ''); } catch {}
+      throw new Error(m);
+    }
+    return res;
+  }
+  const res = await fetch('/api/translate', { method: 'POST', headers: { 'content-type': 'application/json', 'x-access-code': state.code }, body: JSON.stringify(payload), signal });
+  if (!res.ok) { let m = 'The request failed (' + res.status + ').'; try { m = (await res.json()).error || m; } catch {} throw new Error(m); }
+  return res;
+}
+
+async function run() {
+  if (state.busy) return;
+  showError('');
+  if (state.mode === 'file' && !state.files.length) return toast('Add a photo or PDF first.');
+  if (state.mode === 'text' && !$('#srcText').value.trim()) return toast('Paste the text first.');
+  if (!state.direct && state.server && !state.server.configured) return showError('The server has no API key yet. Add ANTHROPIC_API_KEY in Cloudflare and redeploy.');
+  if (state.direct && !state.apiKey.trim()) { $('#key').focus(); return showError('Enter your Anthropic API key in the top bar first.'); }
+
+  state.abort = new AbortController();
+  setBusy(true, 'Preparing the pages');
+  state.resultTarget = toSel.value;
+  const payload = { source: fromSel.value, target: toSel.value, style: $('#style').value, notes: $('#notes').value, extra: $('#extra').value, files: [], text: '' };
+  try {
+    if (state.mode === 'file') {
+      for (let i = 0; i < state.files.length; i++) {
+        $('#busyText').textContent = `Preparing page ${i + 1} of ${state.files.length}`;
+        const f = state.files[i];
+        payload.files.push(f.kind === 'pdf' ? { type: 'pdf', data: await blobToB64(f.file) } : { type: 'image', data: await imageToB64(f) });
+      }
+    } else payload.text = $('#srcText').value;
+
+    $('#busyText').textContent = 'Reading the document';
+    showTab('tr'); $('#info').hidden = true; $('#tools').hidden = true; setEditing(false);
+    state.md = ''; state.issues = []; state.istate = {}; state.iedit = {}; state.history = [];
+    renderSheet('', true);
+
+    const res = await sendRequest(payload, state.abort.signal);
+    const result = await readStream(res);
+    finish(result);
+  } catch (e) {
+    if (e.name === 'AbortError') { toast('Stopped.'); sheet.classList.remove('caret'); if (!state.md) { sheet.classList.remove('rtl'); sheet.innerHTML = emptyHtml(); } }
+    else { showError(e.message || 'Something went wrong.'); sheet.classList.remove('caret'); if (!state.md) { sheet.classList.remove('rtl'); sheet.innerHTML = emptyHtml(); } }
+  } finally { setBusy(false); }
+}
+const emptyHtml = () => '<div class="empty"><b>Ready when you are</b>Add a photo or PDF of the form, choose the languages and press Translate.</div>';
+
+async function readStream(res) {
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '', acc = '', stop = null, apiErr = null, last = 0;
+  const handle = raw => {
+    const line = raw.split('\n').find(l => l.startsWith('data:')); if (!line) return;
+    let ev; try { ev = JSON.parse(line.slice(5).trim()); } catch { return; }
+    if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'input_json_delta') {
+      acc += ev.delta.partial_json || '';
+      const now = performance.now();
+      if (now - last > 160) {
+        last = now; const p = partialMd(acc);
+        if (p) { renderSheet(p, true); $('#busyText').textContent = 'Translating (' + Math.round(acc.length / 1000) + 'k characters)'; }
+      }
+    } else if (ev.type === 'message_delta' && ev.delta) stop = ev.delta.stop_reason || stop;
+    else if (ev.type === 'error') apiErr = (ev.error && ev.error.message) || 'The AI service reported an error.';
+  };
+  while (true) {
+    const { value, done } = await reader.read(); if (done) break;
+    buf += dec.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+    let idx; while ((idx = buf.indexOf('\n\n')) >= 0) { handle(buf.slice(0, idx)); buf = buf.slice(idx + 2); }
+  }
+  if (buf.trim()) handle(buf);
+  if (apiErr) throw new Error(apiErr);
+  try { return { data: JSON.parse(acc), stop }; }
+  catch {
+    const p = partialMd(acc);
+    if (p) { state.md = p; renderSheet(p, false); }
+    throw new Error(stop === 'max_tokens'
+      ? 'The document is very long and the answer was cut off. Translate fewer pages at a time. What was received is shown below.'
+      : 'The answer could not be read completely. Please try again.');
+  }
+}
+
+function finish({ data, stop }) {
+  state.md = data.translation_markdown || '';
+  state.info = data.document_info || {};
+  state.issues = (Array.isArray(data.issues) ? data.issues : []).map((x, i) => ({
+    id: String(x.id || 'i' + (i + 1)).replace(/[^\w-]/g, ''), severity: ['critical', 'warning', 'info'].includes(x.severity) ? x.severity : 'info',
+    category: x.category || 'other', location: x.location || '', source_text: x.source_text || '', problem: x.problem || '', suggestion: x.suggestion || '',
+    translation_excerpt: x.translation_excerpt || '', replacement: x.replacement || '',
+  }));
+  const seen = new Set(); state.issues.forEach((x, i) => { if (seen.has(x.id)) x.id = x.id + '-' + i; seen.add(x.id); });
+  state.issues.forEach(x => { state.istate[x.id] = 'pending'; state.iedit[x.id] = x.replacement; });
+  renderSheet(state.md, false); renderInfo(); renderIssues(); $('#tools').hidden = false; $('#undo').hidden = true;
+  if (stop === 'max_tokens') showError('The answer reached the length limit and may be incomplete at the end. Translate fewer pages at a time to be safe.');
+  const crit = state.issues.filter(i => i.severity === 'critical').length;
+  if (state.issues.length) toast(state.issues.length + ' point' + (state.issues.length > 1 ? 's' : '') + ' to review' + (crit ? ', ' + crit + ' important' : ''));
+}
+
+function renderInfo() {
+  const d = state.info || {}; const box = $('#info'); const parts = [];
+  if (d.document_type) parts.push(`<span class="tag">${esc(d.document_type)}</span>`);
+  if (d.detected_source_language) parts.push(`<span class="tag">Source: ${esc(d.detected_source_language)}</span>`);
+  if (d.confidence) { const m = { high: ['hi', 'High'], medium: ['mid', 'Medium'], low: ['lo', 'Low'] }[d.confidence] || ['', d.confidence]; parts.push(`<span class="tag ${m[0]}">${m[1]} confidence in reading</span>`); }
+  box.innerHTML = parts.join(''); box.hidden = !parts.length;
+}
+
+/* ---------- review ---------- */
+const CAT = { illegible: 'Illegible text', ambiguous: 'Unclear wording', inconsistency: 'Inconsistency', source_error: 'Possible error in the source', legal_check: 'Legal check', terminology: 'Terminology', other: 'Note' };
+const SEV = { critical: 'Important', warning: 'Please check', info: 'Note' };
+function renderIssues() {
+  const list = $('#issues'); const n = state.issues.length; const open = state.issues.filter(i => state.istate[i.id] === 'pending').length;
+  const crit = state.issues.filter(i => i.severity === 'critical' && state.istate[i.id] === 'pending').length;
+  const badge = $('#badge'); badge.hidden = !open; badge.textContent = open; badge.classList.toggle('crit', crit > 0);
+  if (!n) { list.innerHTML = '<div class="noissues"><b>No problems found.</b> The translation is complete and nothing needed your attention. Please still read it once before use.</div>'; $('#applyBar').hidden = true; return; }
+  list.innerHTML = state.issues.map(is => {
+    const st = state.istate[is.id]; const canFix = !!(is.translation_excerpt && is.replacement);
+    const stText = { approved: 'Approved. Will be applied when you press Apply.', skipped: 'Skipped', applied: 'Applied to the translation', failed: 'Could not find that text. Use Edit text to change it by hand.' }[st] || '';
+    return `<article class="issue ${is.severity} is-${st}" id="issue-${esc(is.id)}" data-id="${esc(is.id)}">
+      <div class="i-top"><span class="sev ${is.severity}">${SEV[is.severity]}</span><span>${esc(CAT[is.category] || 'Note')}</span>${is.location ? `<span dir="auto">· ${esc(is.location)}</span>` : ''}</div>
+      ${is.source_text ? `<span class="lbl">Source says</span><div class="src" dir="auto">${esc(is.source_text)}</div>` : ''}
+      <p dir="auto" style="font-family:var(--naskh);line-height:1.9">${esc(is.problem)}</p>
+      ${is.suggestion ? `<p dir="auto" style="font-family:var(--naskh);line-height:1.9"><b>Suggestion:</b> ${esc(is.suggestion)}</p>` : ''}
+      ${canFix ? `<div class="diff"><div><span class="lbl">Now in the translation</span><div class="old" dir="auto">${esc(is.translation_excerpt)}</div></div>
+        <div><span class="lbl">Proposed wording (you can edit it)</span><textarea data-edit="${esc(is.id)}" dir="auto" ${st === 'applied' ? 'disabled' : ''}>${esc(state.iedit[is.id])}</textarea></div></div>` : ''}
+      <div class="i-acts">
+        ${st === 'pending' || st === 'approved' || st === 'skipped' ? `
+          ${canFix ? `<button class="btn sm ${st === 'approved' ? 'primary' : ''}" data-act="approve">${st === 'approved' ? 'Approved' : 'Approve fix'}</button>` : ''}
+          <button class="btn sm" data-act="skip">${st === 'skipped' ? 'Skipped (undo)' : (canFix ? 'Skip' : 'Mark as read')}</button>` : ''}
+        ${is.translation_excerpt ? '<button class="btn sm" data-act="locate">Show in translation</button>' : ''}
+        ${stText ? `<span class="state">${stText}</span>` : ''}
+      </div></article>`;
+  }).join('');
+  updateApplyBar();
+}
+function updateApplyBar() {
+  const fixable = state.issues.filter(i => i.translation_excerpt && i.replacement && state.istate[i.id] !== 'applied');
+  const approved = state.issues.filter(i => state.istate[i.id] === 'approved' && i.translation_excerpt && i.replacement);
+  const bar = $('#applyBar'); bar.hidden = !fixable.length;
+  $('#applyText').textContent = approved.length + ' of ' + fixable.length + ' suggested corrections approved. Nothing changes until you press Apply.';
+  $('#apply').disabled = !approved.length;
+}
+$('#issues').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const id = b.closest('.issue').dataset.id; const act = b.dataset.act; const cur = state.istate[id];
+  if (act === 'approve') state.istate[id] = cur === 'approved' ? 'pending' : 'approved';
+  if (act === 'skip') state.istate[id] = cur === 'skipped' ? 'pending' : 'skipped';
+  if (act === 'locate') {
+    showTab('tr'); const m = sheet.querySelector(`mark[data-issue="${CSS.escape(id)}"]`);
+    if (m) { m.scrollIntoView({ behavior: 'smooth', block: 'center' }); m.classList.add('flash'); setTimeout(() => m.classList.remove('flash'), 1500); } else toast('That text is not highlighted. Use Edit text to find it.');
+    return;
+  }
+  renderSheet(state.md, false); renderIssues();
+});
+$('#issues').addEventListener('input', e => { const t = e.target.closest('textarea[data-edit]'); if (t) state.iedit[t.dataset.edit] = t.value; });
+$('#approveAll').addEventListener('click', () => {
+  state.issues.forEach(i => { if (i.translation_excerpt && i.replacement && state.istate[i.id] !== 'applied') state.istate[i.id] = 'approved'; });
+  renderSheet(state.md, false); renderIssues();
+});
+$('#apply').addEventListener('click', () => {
+  let md = state.md; const before = md; let done = 0;
+  state.issues.forEach(i => {
+    if (state.istate[i.id] !== 'approved' || !i.translation_excerpt) return;
+    const idx = md.indexOf(i.translation_excerpt);
+    if (idx < 0) { state.istate[i.id] = 'failed'; return; }
+    const rep = state.iedit[i.id] ?? i.replacement;
+    md = md.slice(0, idx) + rep + md.slice(idx + i.translation_excerpt.length); state.istate[i.id] = 'applied'; done++;
+  });
+  if (done) { state.history.push(before); state.md = md; $('#undo').hidden = false; }
+  renderSheet(state.md, false); renderIssues();
+  toast(done ? done + ' correction' + (done > 1 ? 's' : '') + ' applied' : 'Nothing could be applied.');
+});
+$('#undo').addEventListener('click', () => {
+  if (!state.history.length) return;
+  state.md = state.history.pop();
+  state.issues.forEach(i => { if (state.istate[i.id] === 'applied' || state.istate[i.id] === 'failed') state.istate[i.id] = 'pending'; });
+  $('#undo').hidden = !state.history.length; renderSheet(state.md, false); renderIssues(); toast('Corrections undone');
+});
+
+/* ---------- editing ---------- */
+function setEditing(on) {
+  $('#editorBox').hidden = !on; $('#sheetWrap').hidden = on;
+  if (on) { $('#editor').value = state.md; $('#editor').focus(); }
+}
+$('#edit').addEventListener('click', () => setEditing(true));
+$('#editCancel').addEventListener('click', () => setEditing(false));
+$('#editDone').addEventListener('click', () => {
+  if ($('#editor').value !== state.md) { state.history.push(state.md); state.md = $('#editor').value; $('#undo').hidden = false; }
+  setEditing(false); renderSheet(state.md, false); toast('Saved');
+});
+
+/* ---------- export ---------- */
+function slug() { const t = (state.info && state.info.title) || 'translation'; return t.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').slice(0, 60) || 'translation'; }
+function cleanClone() { const c = sheet.cloneNode(true); c.querySelectorAll('mark').forEach(m => m.replaceWith(...m.childNodes)); return c; }
+$('#copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(cleanClone().innerText || sheet.innerText); toast('Copied'); }
+  catch { const r = document.createRange(); r.selectNodeContents(sheet); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Press Ctrl+C to copy'); }
+});
+$('#word').addEventListener('click', () => {
+  const rtl = targetIsRtl(); const c = cleanClone();
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(slug())}</title>
+<style>@page{size:A4;margin:2.2cm}body{font-family:${rtl ? "'Jameel Noori Nastaleeq','Noto Nastaliq Urdu','Times New Roman'" : "'Times New Roman'"},serif;font-size:${rtl ? 14 : 12}pt;line-height:1.5}
+h1{font-size:18pt;text-align:center}h2{font-size:14pt;border-bottom:1px solid #999}h3{font-size:13pt}p{text-align:justify;margin:0 0 8pt}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #555;padding:4pt 6pt;vertical-align:top}th{background:#eee}.note{font-style:italic;color:#444}</style></head>
+<body dir="${rtl ? 'rtl' : 'ltr'}">${c.innerHTML}</body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug() + '.doc'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+$('#print').addEventListener('click', () => { showTab('tr'); setEditing(false); setTimeout(() => window.print(), 80); });
+
+/* ---------- run ---------- */
+$('#go').addEventListener('click', run);
+$('#stop').addEventListener('click', () => state.abort && state.abort.abort());
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') run(); });
+
+ping();
+})();
+</script>
+</body>
+</html>
